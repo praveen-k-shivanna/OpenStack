@@ -1,0 +1,101 @@
+CentOS Packstack Installation file:
+ncpa.cpl
+:wq
+su
+ifconfig
+vi /etc/sysconfig/network-scripts/ifcfg-enp0s3
+BOOTPROTO=none
+IPADDR=192.168.1.2
+NETMASK=255.255.255.0
+GATEWAY=192.168.1.1
+DNS1=8.8.8.8
+ONBOOT=yes
+systemctl restart network
+vi /etc/resolv.conf
+nameserver 8.8.8.8
+nameserver 4.4.4.4
+search localdomain
+
+vi /etc/hostname
+allinone
+vi /etc/hosts
+192.168.1.7 allinone allinone.com controller
+
+
+su
+sudo yum update -y
+sudo yum -y install gcc
+sudo yum install make perl
+sudo yum -y install kernel-devel-$(uname -r)
+sudo yum install elfutils-libelf-devel
+
+
+sudo yum install epel-release
+
+
+
+cat /etc/redhat-release
+vi /etc/environment
+
+LANG=en_US.utf-8
+LC_ALL=en_US.utf-8
+
+more /etc/environment
+systemctl status firewalld
+systemctl stop firewalld
+systemctl disable firewalld
+systemctl status NetworkManager
+systemctl stop NetworkManager
+systemctl disable NetworkManager
+systemctl enable network
+systemctl start network
+cat /etc/sysconfig/network-scripts/ifcfg-enp0s3
+vi /etc/selinux/config
+SELINUX=disabled
+
+reboot
+
+
+sudo nano /root/keystonerc_admin
+
+export OS_PROJECT_DOMAIN_NAME=Default
+export OS_USER_DOMAIN_NAME=Default
+export OS_PROJECT_NAME=admin
+export OS_TENANT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSWORD=your_admin_password
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+
+
+setenforce 0
+getenforce
+sudo yum install -y centos-release-openstack-train
+sudo yum install -y yum-utils
+sudo yum-config-manager --enable openstack-train
+sudo yum update -y
+sudo yum install -y openstack-packstack
+ip address show
+
+
+
+packstack --allinone --provision-demo=n --os-neutron-ovs-bridge-mappings=extnet:br-ex --os-neutron-ml2-mechanism-drivers=openvswitch --os-neutron-l2-agent=openvswitch --os-neutron-ovs-bridge-interfaces=br-ex:enp0s3 --os-neutron-ml2-type-drivers=vxlan,flat --os-neutron-ml2-tenant-network-types=vxlan
+
+http://192.168.1.7/dashboard 
+
+
+ip address show
+vi /etc/sysconfig/network-scripts/ifcfg-enp0s3
+vi /etc/sysconfig/network-scripts/ifcfg-br-ex
+source keystonerc_admin
+cat keystonerc_admin
+
+site: http://192.168.1.7/dashboard 
+User Name: admin
+Password: 1250da0e45584b9e
+
+neutron net-create external_network --provider:network_type flat --provider:physical_network extnet --router:external
+
+neutron subnet-create --name public_subnet --enable_dhcp-False --allocation-pool-start=192.168.0.100,end=192.168.0.120 --gateway=192.168.0.1 external_network 192.168.0.0/24
+
+
